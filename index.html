@@ -231,6 +231,11 @@ function setOtherInclusion(i,value){
   inclusionSelections[i]=value.trim() ? "Other: "+value.trim() : "Other";
 }
 
+function calculateOrderTotal(o){
+  let total=0;
+  SETTINGS.products.forEach((p,i)=>total+=p.price*quantities[i]);
+  return Number(total.toFixed(2));
+}
 function updateTotal(){
   let total=0;
   SETTINGS.products.forEach((p,i)=>total+=p.price*quantities[i]);
@@ -279,6 +284,7 @@ Customer: ${o.name}
 Phone: ${o.phone}
 Address: ${o.address}
 Order Week: ${o.orderWeek}
+Total: ${money(calculateOrderTotal(o))}
 
 Items:
 ${o.items.join("\n")}
@@ -354,7 +360,7 @@ async function saveOrderForCapacity(o){
   }
   const {error}=await db.from("orders").insert([{
     customer_name:o.name, phone:o.phone, customer_address:o.address, pickup_date:o.orderWeek, 
-    items:o.items.join("\\n"), inclusion:o.inclusions.join("\\n"), quantity:getSelectedLoaves(),
+    items:o.items.join("\\n"), inclusion:o.inclusions.join("\\n"), total_amount:calculateOrderTotal(o), quantity:getSelectedLoaves(),
     notes:o.notes, status:"New"
   }]);
   if(error) throw new Error("Unable to save the order.");
