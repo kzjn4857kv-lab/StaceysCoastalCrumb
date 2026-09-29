@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#6b351c">
+<title>Stacey's Coastal Crumb | Order</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root{
+  --brown:#6b351c; --tan:#c99652; --cream:#fffaf2; --blue:#3f7788;
+  --ink:#30251f; --muted:#766b63; --line:#eadfd3; --white:#fff;
+}
+*{box-sizing:border-box}
+body{margin:0;font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:var(--cream);color:var(--ink)}
+.container{max-width:760px;margin:auto;padding:20px}
+header{text-align:center;padding:26px 10px 18px}
+.logo-ring{width:92px;height:92px;border:3px solid var(--tan);border-radius:50%;margin:0 auto 12px;display:grid;place-items:center;color:var(--brown);font-weight:800;line-height:1.05;font-size:12px}
+h1{font-family:Georgia,serif;color:var(--brown);font-size:34px;margin:0}
+.tagline{color:var(--blue);font-weight:650;margin-top:6px}
+.card{background:var(--white);border:1px solid var(--line);border-radius:18px;padding:20px;margin:16px 0;box-shadow:0 5px 18px rgba(70,45,25,.06)}
+h2{font-family:Georgia,serif;color:var(--brown);margin:0 0 14px}
+.product{display:grid;grid-template-columns:1fr auto;gap:12px;align-items:center;padding:15px 0;border-bottom:1px solid var(--line)}
+.product:last-child{border-bottom:0}
+.product-name{font-weight:750}
+.product-desc{font-size:13px;color:var(--muted);margin-top:3px}
+.price{font-weight:800;color:var(--brown);margin-top:4px}
+.qty{display:flex;align-items:center;gap:8px}
+.qty button{width:36px;height:36px;border:1px solid var(--line);border-radius:10px;background:#fff;font-size:20px;cursor:pointer}
+.qty span{min-width:24px;text-align:center;font-weight:800}
+label{display:block;font-weight:700;margin:12px 0 6px}
+input,select,textarea{width:100%;padding:12px;border:1px solid #d9cec4;border-radius:10px;background:#fff;font:inherit}
+textarea{min-height:80px;resize:vertical}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.total{display:flex;justify-content:space-between;font-size:20px;font-weight:850;color:var(--brown);padding-top:8px}
+.notice{background:#f4eadc;border-radius:12px;padding:12px;color:#5d493b;font-size:13px}
+button.primary{width:100%;border:0;border-radius:12px;padding:15px;background:var(--brown);color:#fff;font-weight:800;font-size:17px;cursor:pointer}
+button.secondary{width:100%;border:1px solid var(--brown);border-radius:12px;padding:13px;background:#fff;color:var(--brown);font-weight:800;font-size:15px;cursor:pointer;margin-top:10px}
+#confirmation{display:none}
+.small{font-size:12px;color:var(--muted);text-align:center;margin-top:12px}
+@media(max-width:560px){.grid{grid-template-columns:1fr}h1{font-size:29px}.container{padding:12px}}
+</style>
+</head>
+<body>
+<div class="container">
+<header>
+  <div class="logo-ring">STACEY'S<br>COASTAL<br>CRUMB</div>
+  <h1>Stacey's Coastal Crumb</h1>
+  <div class="tagline">Fresh homemade sourdough • Made with love</div>
+</header>
+<div class="card">
+  <h2>Pickup Information</h2>
+  <div class="grid">
+    <div>
+      <label for="name">Name *</label>
+      <input id="name" required placeholder="Your name">
+    </div>
+    <div>
+      <label for="phone">Phone *</label>
+      <input id="phone" required type="tel" placeholder="(555) 555-5555">
+    </div>
+  </div>
+  <label for="address">Address *</label>
+  <input id="address" required placeholder="Street address, city, state, ZIP">
+  <label for="orderWeek">Order Week *</label>
+   <select id="orderWeek" required onchange="updateCapacityMessage()">
+     <option value="">Select a Monday</option>
+   </select>
+    <div id="capacityMessage" class="notice" style="margin-top:8px">Select an order week to see weekly availability.</div>
+  <label for="notes">Special Instructions</label>
+  <textarea id="notes" placeholder="Favorite inclusions, allergies, questions, etc."></textarea>
+</div>
+
+<div class="card">
+  <h2>Place Your Order</h2>
+  <div class="notice"><strong>Weekly availability:</strong> Stacey can make a maximum of 8 loaves per week. Choose your order week below; the site will prevent orders that would exceed the weekly capacity.</div>
+  <div id="products"></div>
+  <div class="total"><span>Order Total</span><span id="total">$0.00</span></div>
+  <div id="selectedLoafCount" class="small">0 loaves selected</div>
+</div>
+
+<div class="card" id="inclusionCard" style="display:none">
+  <h2>Choose Your Inclusions</h2>
+  <div class="notice">Select one inclusion for each Inclusion Loaf. If you select other...CHALLENGE ACCEPTED!</div>
+  <div id="inclusionSelections"></div>
+</div>
+
+
+
+<div class="card">
+  <button class="primary" onclick="submitOrder()">Submit Order</button>
+  <div class="small">After you submit, your text-message app will open with the order details ready to send to Stacey.</div>
+</div>
+
+</div>
+
+<script>
+/*
+  STACEY'S COASTAL CRUMB SETTINGS
+  Replace the values below before publishing.
+*/
+const SUPABASE_URL = "https://kexrxtydurzkbfwqerqr.supabase.co";
+const SUPABASE_KEY = "sb_publishable_yuxz9YQ22Oe0fwX60sl2Iw_Q_EaoRcx";
+const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+const SETTINGS = {
+  weeklyLoafLimit: 8, // Fallback only; weekly capacity is read from Supabase.
+  bakerPhone: "19738014502",     // Stacey's order text number
+  bakerEmail: "",     // Orders are sent by text
+  currency: "$",
+  products: [
+    {name:"Plain Sourdough", desc:"Traditional artisan sourdough loaf", price:9},
+    {name:"Herbed Sourdough", desc:"Savory herb sourdough loaf", price:10},
+    {name:"Croissant Loaf", desc:"Buttery croissant-style loaf", price:11},
+    {name:"Inclusion Loaf", desc:"Choose an inclusion below", price:12}
+  ]
+};
+
+const quantities = SETTINGS.products.map(() => 0);
+let inclusionSelections = [];
+
+function money(n){return SETTINGS.currency + n.toFixed(2)}
+
+function renderProducts(){
+  const box=document.getElementById("products");
+  box.innerHTML=SETTINGS.products.map((p,i)=>`
+    <div class="product">
+      <div>
+        <div class="product-name">${p.name}</div>
+        <div class="product-desc">${p.desc}</div>
+        <div class="price">${p.price>0 ? money(p.price) : "Price to be confirmed"}</div>
+      </div>
+      <div class="qty">
+        <button onclick="changeQty(${i},-1)">−</button>
+        <span id="q${i}">0</span>
+        <button onclick="changeQty(${i},1)">+</button>
+      </div>
+    </div>`).join("");
+}
+async function changeQty(i,d){
+  const currentTotal=getSelectedLoaves();
+  if(d>0){
+    const date=document.getElementById("orderWeek").value;
+    if(!date){
+      alert("Please choose an order week before adding loaves.");
+      return;
+    }
+    try{
+      const weekKey=getWeekKey(date);
+      const used=await getWeekUsed(weekKey);
+      const weeklyLimit=await getWeekCapacity(weekKey);
+      if(used+currentTotal+1>weeklyLimit){
+        const remaining=Math.max(0,weeklyLimit-used-currentTotal);
+        alert(`Only ${remaining} more loaf(s) can be added for this order week. The weekly limit is ${weeklyLimit} loaves.`);
+        return;
+      }
+    }catch(e){
+      alert("We couldn't check weekly availability. Please try again.");
+      return;
+    }
+  }
+  quantities[i]=Math.max(0,quantities[i]+d);
+  document.getElementById("q"+i).textContent=quantities[i];
+  updateTotal();
+  updateInclusionVisibility();
+  updateCapacityMessage();
+}
+const INCLUSIONS = [
+  "Chocolate Chip Croissant",
+  "Cheddar Jalapeño",
+  "Blueberry Lemon",
+  "Caramelized Onion Gruyere",
+  "Cinnamon Raisin",
+  "Sun-dried Tomato and Parmesan",
+  "Cranberry Walnut",
+  "Chili Crisp and Green Scallion",
+  "Kalamata Olives and Rosemary",
+  "Rosemary",
+  "Marzipan",
+  "Caraway and Rye",
+  "Other"
+];
+
+function updateInclusionVisibility(){
+  const idx=SETTINGS.products.findIndex(p=>p.name==="Inclusion Loaf");
+  const count=idx>=0 ? quantities[idx] : 0;
+  const card=document.getElementById("inclusionCard");
+  if(count>0){
+    // Preserve existing selections when quantity changes, while keeping exactly one selection per loaf.
+    inclusionSelections=inclusionSelections.slice(0,count);
+    while(inclusionSelections.length<count) inclusionSelections.push("");
+    card.style.display="block";
+    renderInclusionSelections();
+  }else{
+    inclusionSelections=[];
+    card.style.display="none";
+    document.getElementById("inclusionSelections").innerHTML="";
+  }
+}
+
+function renderInclusionSelections(){
+  const box=document.getElementById("inclusionSelections");
+  box.innerHTML=inclusionSelections.map((value,i)=>{
+    const isOther=value.startsWith("Other:") || value==="Other";
+    const otherValue=value.startsWith("Other:") ? value.slice(6) : "";
+    return `
+      <div style="padding:14px 0;border-bottom:1px solid var(--line)">
+        <label for="inclusion${i}">Inclusion Loaf ${i+1} *</label>
+        <select id="inclusion${i}" onchange="setInclusion(${i}, this.value)">
+          <option value="">Select an inclusion</option>
+          ${INCLUSIONS.map(x=>`<option ${(!isOther && value===x) || (isOther && x==="Other") ? "selected" : ""}>${x}</option>`).join("")}
+        </select>
+        <div id="otherInclusionWrap${i}" style="display:${isOther?"block":"none"};margin-top:8px">
+          <label for="otherInclusion${i}">Other Inclusion</label>
+          <input id="otherInclusion${i}" value="${otherValue.replace(/&/g,"&amp;").replace(/"/g,"&quot;")}" placeholder="Tell us what you'd like" oninput="setOtherInclusion(${i}, this.value)">
+        </div>
+      </div>`;
+  }).join("");
+}
+
+function setInclusion(i,value){
+  inclusionSelections[i]=value;
+  if(value!=="Other"){
+    document.getElementById(`otherInclusionWrap${i}`).style.display="none";
+  }else{
+    document.getElementById(`otherInclusionWrap${i}`).style.display="block";
+  }
+}
+
+function setOtherInclusion(i,value){
+  inclusionSelections[i]=value.trim() ? "Other: "+value.trim() : "Other";
+}
+
+function updateTotal(){
+  let total=0;
+  SETTINGS.products.forEach((p,i)=>total+=p.price*quantities[i]);
+  document.getElementById("total").textContent=money(total);
+  const count=getSelectedLoaves();
+  document.getElementById("selectedLoafCount").textContent=`${count} ${count===1?"loaf":"loaves"} selected`;
+}
+function getOrder(){
+  const items=SETTINGS.products.map((p,i)=>({p,i})).filter(x=>quantities[x.i]>0)
+    .map(x=>`${quantities[x.i]} × ${x.p.name}`);
+  let inclusions=[];
+  const inclusionIdx=SETTINGS.products.findIndex(p=>p.name==="Inclusion Loaf");
+  if(inclusionIdx>=0 && quantities[inclusionIdx]>0){
+    inclusions=inclusionSelections.slice(0,quantities[inclusionIdx]);
+  }
+  return {
+    items,
+    inclusions,
+    name:document.getElementById("name").value.trim(),
+    phone:document.getElementById("phone").value.trim(),
+    address:document.getElementById("address").value.trim(),
+    orderWeek:document.getElementById("orderWeek").value,
+    
+    notes:document.getElementById("notes").value.trim()
+  };
+}
+function validate(o){
+  if(!o.items.length){alert("Please select at least one loaf.");return false}
+  if(!o.name||!o.phone||!o.address||!o.orderWeek){alert("Please complete your name, phone number, address, and order week.");return false}
+  const inclusionIdx=SETTINGS.products.findIndex(p=>p.name==="Inclusion Loaf");
+  if(inclusionIdx>=0 && quantities[inclusionIdx]>0){
+    const count=quantities[inclusionIdx];
+    for(let i=0;i<count;i++){
+      if(!o.inclusions[i]){alert(`Please select an inclusion for Inclusion Loaf ${i+1}.`);return false}
+      if(o.inclusions[i]==="Other"){
+        alert(`Please enter the other inclusion for Inclusion Loaf ${i+1}.`);return false
+      }
+    }
+  }
+  return true;
+}
+function orderText(o){
+  return `NEW STACEY'S COASTAL CRUMB ORDER
+
+Customer: ${o.name}
+Phone: ${o.phone}
+Address: ${o.address}
+Order Week: ${o.orderWeek}
+
+Items:
+${o.items.join("\n")}
+${o.inclusions && o.inclusions.length ? "Inclusions:\n" + o.inclusions.map((x,i)=>`  Inclusion Loaf ${i+1}: ${x}`).join("\n") : ""}
+
+Notes: ${o.notes || "None"}`;
+}
+
+function populateOrderWeeks(){
+  const select=document.getElementById("orderWeek");
+  const today=new Date();
+  today.setHours(12,0,0,0);
+
+  // Calculate the Monday of the current week.
+  const day=today.getDay();
+  const diff=(day===0 ? -6 : 1-day);
+  const firstMonday=new Date(today);
+  firstMonday.setDate(today.getDate()+diff);
+
+  // Offer 12 order weeks, all starting on Monday.
+  for(let i=0;i<12;i++){
+    const monday=new Date(firstMonday);
+    monday.setDate(firstMonday.getDate()+(i*7));
+    const value=monday.toISOString().slice(0,10);
+
+    const option=document.createElement("option");
+    option.value=value;
+    option.textContent=`Week of ${monday.toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"})}`;
+    select.appendChild(option);
+  }
+}
+
+function getWeekKey(dateString){
+  const d=new Date(dateString+"T12:00:00");
+  const day=d.getDay();
+  const diff=(day===0 ? -6 : 1-day);
+  d.setDate(d.getDate()+diff);
+  return d.toISOString().slice(0,10);
+}
+async function getWeekUsed(weekKey){
+  const {data,error}=await db.rpc("weekly_loaves",{pickup_week:weekKey});
+  if(error) throw new Error("Unable to check weekly availability.");
+  return Number(data||0);
+}
+
+async function getWeekCapacity(weekKey){
+  const {data,error}=await db.rpc("weekly_capacity_for_week",{p_week_start:weekKey});
+  if(error) throw new Error("Unable to check weekly capacity.");
+  return Number(data ?? SETTINGS.weeklyLoafLimit);
+}
+function getSelectedLoaves(){ return quantities.reduce((sum,q)=>sum+q,0); }
+async function updateCapacityMessage(){
+  const date=document.getElementById("orderWeek").value;
+  const box=document.getElementById("capacityMessage");
+  if(!date){box.textContent="Select an order week to see weekly availability.";return}
+  try{
+    const weekKey=getWeekKey(date);
+    const [used,weeklyLimit]=await Promise.all([
+      getWeekUsed(weekKey),
+      getWeekCapacity(weekKey)
+    ]);
+    const remaining=Math.max(0,weeklyLimit-used);
+    box.textContent=`${remaining} of ${weeklyLimit} loaves remaining for the week of ${weekKey}.`;
+  }catch(e){ box.textContent="Availability is temporarily unavailable. Please try again."; }
+}
+async function saveOrderForCapacity(o){
+  const weekKey=getWeekKey(o.orderWeek);
+  const latestUsed=await getWeekUsed(weekKey);
+  const weeklyLimit=await getWeekCapacity(weekKey);
+  const requested=getSelectedLoaves();
+  if(latestUsed+requested>weeklyLimit){
+    throw new Error(`This week's capacity has changed. Only ${Math.max(0,weeklyLimit-latestUsed)} loaf(s) remain.`);
+  }
+  const {error}=await db.from("orders").insert([{
+    customer_name:o.name, phone:o.phone, customer_address:o.address, pickup_date:o.orderWeek, 
+    items:o.items.join("\\n"), inclusion:o.inclusions.join("\\n"), quantity:getSelectedLoaves(),
+    notes:o.notes, status:"New"
+  }]);
+  if(error) throw new Error("Unable to save the order.");
+}
+async function checkCapacity(o){
+  const weekKey=getWeekKey(o.orderWeek);
+  const [used,weeklyLimit]=await Promise.all([
+    getWeekUsed(weekKey),
+    getWeekCapacity(weekKey)
+  ]);
+  return {used,requested:getSelectedLoaves(),weeklyLimit,remaining:Math.max(0,weeklyLimit-used)};
+}
+
+async function clearOrderForm(){
+  quantities.fill(0);
+  document.getElementById("name").value="";
+  document.getElementById("phone").value="";
+  document.getElementById("address").value="";
+  document.getElementById("orderWeek").value="";
+  document.getElementById("notes").value="";
+  inclusionSelections=[];
+  document.getElementById("inclusionSelections").innerHTML="";
+  document.getElementById("inclusionCard").style.display="none";
+  renderProducts();
+  updateTotal();
+  document.getElementById("capacityMessage").textContent="Select an order week to see weekly availability.";
+}
+
+async function submitOrder(){
+  const o=getOrder(); if(!validate(o)) return;
+  try{
+    const cap=await checkCapacity(o);
+    if(cap.used+cap.requested>cap.weeklyLimit){
+      alert(`That order would exceed this week's ${cap.weeklyLimit}-loaf limit. Only ${cap.remaining} loaf(s) remain available for that week.`);
+      await updateCapacityMessage(); return;
+    }
+    await saveOrderForCapacity(o);
+    const msg=orderText(o);
+    try{ await navigator.clipboard.writeText(msg); }catch(e){}
+    await clearOrderForm();
+    // Open the device's text-message composer with the order pre-filled.
+    const smsBody = encodeURIComponent(msg);
+    window.location.href = `sms:+${SETTINGS.bakerPhone}&body=${smsBody}`;
+  }catch(e){ alert(e.message||"Unable to submit the order. Please try again."); }
+}
+populateOrderWeeks();
+renderProducts();
+updateTotal();
+
+</script>
+</body>
+</html>
