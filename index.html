@@ -89,7 +89,14 @@ button.secondary{width:100%;border:1px solid var(--brown);border-radius:12px;pad
 
 <div class="card">
   <button class="primary" onclick="submitOrder()">Submit Order</button>
-  <div class="small">After you submit, your text-message app will open with the order details ready to send to Stacey.</div>
+  <div class="small">Your order will be submitted to Stacey and a confirmation will appear here.</div>
+</div>
+
+<div class="card" id="confirmation">
+  <h2>Order Submitted!</h2>
+  <div class="notice">Thank you! Your order has been received by Stacey's Coastal Crumb.</div>
+  <p style="text-align:center;margin:18px 0 8px">Your order has been successfully submitted.</p>
+  <button class="secondary" onclick="returnToOrdering()">Return to Ordering</button>
 </div>
 
 </div>
@@ -398,14 +405,16 @@ async function submitOrder(){
       await updateCapacityMessage(); return;
     }
     await saveOrderForCapacity(o);
-    const msg=orderText(o);
-    try{ await navigator.clipboard.writeText(msg); }catch(e){}
     await clearOrderForm();
-    // Open the device's text-message composer with the order pre-filled.
-    const smsBody = encodeURIComponent(msg);
-    window.location.href = `sms:+${SETTINGS.bakerPhone}&body=${smsBody}`;
+    document.querySelectorAll(".card:not(#confirmation)").forEach(card=>card.style.display="none");
+    document.getElementById("confirmation").style.display="block";
   }catch(e){ alert(e.message||"Unable to submit the order. Please try again."); }
 }
+function returnToOrdering(){
+  document.getElementById("confirmation").style.display="none";
+  document.querySelectorAll(".card:not(#confirmation)").forEach(card=>card.style.display="block");
+}
+
 populateOrderWeeks();
 renderProducts();
 updateTotal();
