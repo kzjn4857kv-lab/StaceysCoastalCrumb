@@ -312,7 +312,7 @@ function populateOrderWeeks(){
   firstMonday.setDate(today.getDate()+diff);
 
   // Offer 12 order weeks, all starting on Monday.
-  for(let i=0;i<12;i++){
+  for(let i=0;i<14;i++){
     const monday=new Date(firstMonday);
     monday.setDate(firstMonday.getDate()+(i*7));
     const value=monday.toISOString().slice(0,10);
