@@ -23,7 +23,9 @@
   <label for="email">Email</label><input id="email" type="email" autocomplete="username">
   <label for="password">Password</label><input id="password" type="password" autocomplete="current-password">
   <button class="primary" style="width:100%;margin-top:14px" onclick="login()">Sign In</button>
+  <button class="secondary" style="width:100%;margin-top:8px" onclick="resetPassword()">Reset Password</button>
   <div id="loginError" class="error"></div>
+  <div id="resetMessage" class="success"></div>
 </div>
 
 <div id="adminView" class="container hidden">
@@ -73,6 +75,16 @@ async function login(){
   const {data,error}=await db.auth.signInWithPassword({email,password});
   if(error){box.textContent=error.message;return}
   await showAdmin(data.user);
+}
+async function resetPassword(){
+  const email=document.getElementById("email").value.trim();
+  const errorBox=document.getElementById("loginError");
+  const messageBox=document.getElementById("resetMessage");
+  errorBox.textContent="";messageBox.textContent="";
+  if(!email){errorBox.textContent="Enter your email address above to reset your password.";return}
+  const {error}=await db.auth.resetPasswordForEmail(email,{redirectTo:window.location.href});
+  if(error){errorBox.textContent=error.message;return}
+  messageBox.textContent="If an account exists for this email, a password reset link has been sent.";
 }
 async function logout(){await db.auth.signOut();document.getElementById("adminView").classList.add("hidden");document.getElementById("loginView").classList.remove("hidden")}
 async function showAdmin(user){
