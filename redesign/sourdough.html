@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#243f4b">
+<title>Freshly Baked Sourdough | Stacey's Coastal Crumb</title>
+<link rel="stylesheet" href="styles.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body class="order-page">
+<div class="site-shell">
+<header class="site-header">
+      <a class="brand" href="index.html" aria-label="Stacey's Coastal Crumb home">
+        <span class="brand-mark">STACEY'S<br>COASTAL<br>CRUMB</span>
+        <span><div class="brand-name">Stacey's Coastal Crumb</div><div class="brand-tagline">Small-batch favorites · Freshly made with love</div></span>
+      </a>
+      <nav class="main-nav" aria-label="Main navigation"><a class="" href="index.html">Home</a><a class="active" href="sourdough.html">Sourdough</a><a class="" href="tomato-sauce.html">Tomato Sauce</a></nav>
+    </header>
+</div>
+<main class="container">
+  <section class="page-intro">
+    <div class="eyebrow">Stacey's Coastal Crumb</div>
+    <h1>Freshly Baked Sourdough</h1>
+    <p>Slow-fermented, artisan-style loaves baked in small batches and made to be shared.</p>
+  </section>
+  <div class="category-banner"><img src="sourdough-hero.jpg" alt="Freshly baked artisan sourdough bread"></div>
+
+  <section class="card" id="pickupCard">
+    <h2>Pickup Information</h2>
+    <p class="section-intro">Tell us a little about you and choose the week for your order.</p>
+    <div class="grid">
+      <div><label for="name">Name *</label><input id="name" required placeholder="Your name" autocomplete="name"></div>
+      <div><label for="phone">Phone *</label><input id="phone" required type="tel" placeholder="(555) 555-5555" autocomplete="tel"></div>
+    </div>
+    <label for="address">Address *</label>
+    <input id="address" required placeholder="Street address, city, state, ZIP" autocomplete="street-address">
+    <label for="orderWeek">Order Week *</label>
+    <select id="orderWeek" required onchange="updateCapacityMessage()"><option value="">Select a Monday</option></select>
+    <div id="capacityMessage" class="notice" style="margin-top:8px">Select an order week to see weekly availability.</div>
+    <label for="notes">Special Instructions</label>
+    <textarea id="notes" placeholder="Favorite inclusions, allergies, questions, etc."></textarea>
+  </section>
+
+  <section class="card" id="menuCard">
+    <h2>Our Menu</h2>
+    <p class="section-intro">Adjust quantities below. You can move between the Sourdough and Tomato Sauce pages without losing your selections.</p>
+    <div class="notice"><strong>Weekly sourdough availability:</strong> A maximum of 8 loaves can be ordered per week. Tomato sauces do not count toward the weekly loaf limit.</div>
+    <section id="sourdough" class="sourdough-category">
+      <div class="category-heading"><div class="category-icon" aria-hidden="true">♨</div><div><h3>Sourdough</h3><p>Slow-fermented, artisan-style loaves</p></div></div>
+      <div id="sourdoughProducts" class="product-list"></div>
+    </section>
+    <section id="tomato-sauce" class="sauce-category">
+      <div class="category-heading sauce"><div class="category-icon" aria-hidden="true">♡</div><div><h3>Tomato Sauce</h3><p>Homemade sauces, ready for your table</p></div></div>
+      <div id="sauceProducts" class="product-list"></div>
+    </section>
+    <div class="total"><span>Order Total</span><span id="total">$0.00</span></div>
+    <div id="selectedLoafCount" class="small">0 loaves selected</div>
+    <div class="cart-note">Your selections and pickup details are saved on this device while you move between product pages.</div>
+  </section>
+
+  <section class="card" id="inclusionCard" style="display:none">
+    <h2>Choose Your Inclusions</h2>
+    <p class="section-intro">Personalize each Inclusion Loaf with one selection.</p>
+    <div class="notice">Select one inclusion for each Inclusion Loaf. If you select other...CHALLENGE ACCEPTED!</div>
+    <div id="inclusionSelections"></div>
+  </section>
+
+  <section class="card" id="submitCard">
+    <button class="primary" onclick="submitOrder()">Submit Order</button>
+    <div class="small">Your order will be submitted to Stacey and a confirmation will appear here.</div>
+  </section>
+
+  <section class="card" id="confirmation">
+    <h2>Order Submitted!</h2>
+    <div class="notice">Thank you! Your order has been received by Stacey's Coastal Crumb.</div>
+    <p style="text-align:center;margin:18px 0 8px">Your order has been successfully submitted.</p>
+    <button class="secondary" onclick="returnToOrdering()">Return to Ordering</button>
+  </section>
+</main>
+<div class="site-shell"><footer>Stacey's Coastal Crumb · Homemade with care</footer></div>
+<script src="app.js"></script>
+</body>
+</html>
