@@ -177,10 +177,11 @@ footer{text-align:center;color:#968a7f;font-size:12px;padding:10px 0 0}
 <section class="intro">
   <div class="eyebrow">A little something homemade</div>
   <h2>Good things are baking.</h2>
-  <p>Browse the menu and place your order for handcrafted sourdough and homemade tomato sauces.</p>
+  <p>Browse the menu and place your order for handcrafted sourdough, homemade tomato sauces, and lasagna.</p>
   <nav class="section-nav" aria-label="Product categories">
     <a href="#sourdough">Sourdough</a>
     <a href="#tomato-sauce">Tomato Sauce</a>
+    <a href="#lasagna">Lasagna</a>
   </nav>
 </section>
 
@@ -211,7 +212,7 @@ footer{text-align:center;color:#968a7f;font-size:12px;padding:10px 0 0}
 <div class="card" id="menuCard">
   <h2>Our Menu</h2>
   <p class="section-intro">Choose your favorites from either category. Add quantities using the plus and minus controls.</p>
-  <div class="notice"><strong>Weekly sourdough availability:</strong> A maximum of 8 loaves can be ordered per week. Tomato sauces do not count toward the weekly loaf limit.</div>
+  <div class="notice"><strong>Weekly sourdough availability:</strong> A maximum of 8 loaves can be ordered per week. Tomato sauces and lasagna do not count toward the weekly loaf limit.</div>
 
   <section id="sourdough">
     <div class="category-heading">
@@ -227,6 +228,14 @@ footer{text-align:center;color:#968a7f;font-size:12px;padding:10px 0 0}
       <div><h3>Tomato Sauce</h3><p>Homemade sauces, ready for your table</p></div>
     </div>
     <div id="sauceProducts" class="product-list"></div>
+  </section>
+
+  <section id="lasagna">
+    <div class="category-heading">
+      <div class="category-icon" aria-hidden="true">♨</div>
+      <div><h3>Lasagna</h3><p>Homemade lasagna, baked with care</p></div>
+    </div>
+    <div id="lasagnaProducts" class="product-list"></div>
   </section>
 
   <div class="total"><span>Order Total</span><span id="total">$0.00</span></div>
@@ -275,7 +284,11 @@ const SETTINGS = {
     {name:"Croissant Loaf", desc:"Buttery croissant-style loaf", price:11, isLoaf:true},
     {name:"Inclusion Loaf", desc:"Choose an inclusion below", price:12, isLoaf:true},
     {name:"Tantalizing Tomato", desc:"A rich tomato sauce made with tomatoes, olive oil, butter, red wine, onion, garlic, and spices.", price:8, isLoaf:false},
-    {name:"Very Vodka", desc:"A creamy vodka sauce made with tomatoes, cream, pancetta, vodka, butter, onion, garlic, and spices.", price:10, isLoaf:false}
+    {name:"Very Vodka", desc:"A creamy vodka sauce made with tomatoes, cream, pancetta, vodka, butter, onion, garlic, and spices.", price:10, isLoaf:false},
+    {name:"Lasagna - Plain", desc:"Homemade lasagna", price:30, isLoaf:false, isLasagna:true},
+    {name:"Lasagna - Sausage", desc:"Homemade lasagna with sausage", price:40, isLoaf:false, isLasagna:true},
+    {name:"Lasagna - Beef", desc:"Homemade lasagna with beef", price:40, isLoaf:false, isLasagna:true},
+    {name:"Lasagna - Turkey", desc:"Homemade lasagna with turkey", price:40, isLoaf:false, isLasagna:true}
   ]
 };
 
@@ -287,6 +300,7 @@ function money(n){return SETTINGS.currency + n.toFixed(2)}
 function renderProducts(){
   const sourdoughBox=document.getElementById("sourdoughProducts");
   const sauceBox=document.getElementById("sauceProducts");
+  const lasagnaBox=document.getElementById("lasagnaProducts");
   const productMarkup=(p,i)=>`
     <div class="product">
       <div>
@@ -303,7 +317,9 @@ function renderProducts(){
   sourdoughBox.innerHTML=SETTINGS.products.map((p,i)=>({p,i}))
     .filter(x=>x.p.isLoaf).map(x=>productMarkup(x.p,x.i)).join("");
   sauceBox.innerHTML=SETTINGS.products.map((p,i)=>({p,i}))
-    .filter(x=>!x.p.isLoaf).map(x=>productMarkup(x.p,x.i)).join("");
+    .filter(x=>!x.p.isLoaf && !x.p.isLasagna).map(x=>productMarkup(x.p,x.i)).join("");
+  lasagnaBox.innerHTML=SETTINGS.products.map((p,i)=>({p,i}))
+    .filter(x=>x.p.isLasagna).map(x=>productMarkup(x.p,x.i)).join("");
 }
 async function changeQty(i,d){
   const currentTotal=getSelectedLoaves();
@@ -434,7 +450,7 @@ function getOrder(){
   };
 }
 function validate(o){
-  if(!o.items.length){alert("Please select at least one loaf.");return false}
+  if(!o.items.length){alert("Please select at least one product.");return false}
   if(!o.name||!o.phone||!o.address||!o.orderWeek){alert("Please complete your name, phone number, address, and order week.");return false}
   const inclusionIdx=SETTINGS.products.findIndex(p=>p.name==="Inclusion Loaf");
   if(inclusionIdx>=0 && quantities[inclusionIdx]>0){
@@ -524,16 +540,22 @@ async function updateCapacityMessage(){
   }catch(e){ box.textContent="Availability is temporarily unavailable. Please try again."; }
 }
 async function saveOrderForCapacity(o){
-  const weekKey=getWeekKey(o.orderWeek);
-  const latestUsed=await getWeekUsed(weekKey);
-  const weeklyLimit=await getWeekCapacity(weekKey);
   const requested=getSelectedLoaves();
-  if(latestUsed+requested>weeklyLimit){
-    throw new Error(`This week's capacity has changed. Only ${Math.max(0,weeklyLimit-latestUsed)} loaf(s) remain.`);
+
+  // Only orders containing loaves use the weekly loaf-capacity check.
+  // Sauce-only and lasagna-only orders must still save when loaf capacity is zero.
+  if(requested>0){
+    const weekKey=getWeekKey(o.orderWeek);
+    const latestUsed=await getWeekUsed(weekKey);
+    const weeklyLimit=await getWeekCapacity(weekKey);
+    if(latestUsed+requested>weeklyLimit){
+      throw new Error(`This week's capacity has changed. Only ${Math.max(0,weeklyLimit-latestUsed)} loaf(s) remain.`);
+    }
   }
+
   const {error}=await db.from("orders").insert([{
     customer_name:o.name, phone:o.phone, customer_address:o.address, pickup_date:o.orderWeek, 
-    items:o.items.join("\\n"), inclusion:o.inclusions.join("\\n"), total_amount:calculateOrderTotal(o), quantity:getSelectedLoaves(),
+    items:o.items.join("\\n"), inclusion:o.inclusions.join("\\n"), total_amount:calculateOrderTotal(o), quantity:requested,
     notes:o.notes, status:"New"
   }]);
   if(error) throw new Error("Unable to save the order.");
@@ -565,10 +587,14 @@ async function clearOrderForm(){
 async function submitOrder(){
   const o=getOrder(); if(!validate(o)) return;
   try{
-    const cap=await checkCapacity(o);
-    if(cap.used+cap.requested>cap.weeklyLimit){
-      alert(`That order would exceed this week's ${cap.weeklyLimit}-loaf limit. Only ${cap.remaining} loaf(s) remain available for that week.`);
-      await updateCapacityMessage(); return;
+    // Enforce weekly capacity only when the customer selected at least one loaf.
+    // Non-loaf products (tomato sauce and lasagna) remain orderable at zero loaf capacity.
+    if(getSelectedLoaves()>0){
+      const cap=await checkCapacity(o);
+      if(cap.used+cap.requested>cap.weeklyLimit){
+        alert(`That order would exceed this week's ${cap.weeklyLimit}-loaf limit. Only ${cap.remaining} loaf(s) remain available for that week.`);
+        await updateCapacityMessage(); return;
+      }
     }
     await saveOrderForCapacity(o);
     await clearOrderForm();
