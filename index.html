@@ -275,7 +275,7 @@ const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 const SETTINGS = {
   weeklyLoafLimit: 8, // Fallback only; weekly capacity is read from Supabase.
-  weeklyLasagnaLimit: 4,
+  weeklyLasagnaLimit: 4, // Fallback only; weekly lasagna capacity is read from Supabase.
   bakerPhone: "19738014502",     // Stacey's order text number
   bakerEmail: "",     // Orders are sent by text
   currency: "$",
@@ -343,11 +343,14 @@ async function changeQty(i,d){
         }
       }
       if(SETTINGS.products[i].isLasagna){
-        const used=await getWeekLasagnaUsed(weekKey);
+        const [used,lasagnaLimit]=await Promise.all([
+          getWeekLasagnaUsed(weekKey),
+          getWeekLasagnaCapacity(weekKey)
+        ]);
         const selected=getSelectedLasagnas();
-        if(used+selected+1>SETTINGS.weeklyLasagnaLimit){
-          const remaining=Math.max(0,SETTINGS.weeklyLasagnaLimit-used-selected);
-          alert(`Only ${remaining} more lasagna(s) can be added for this order week. The weekly limit is ${SETTINGS.weeklyLasagnaLimit} lasagnas.`);
+        if(used+selected+1>lasagnaLimit){
+          const remaining=Math.max(0,lasagnaLimit-used-selected);
+          alert(`Only ${remaining} more lasagna(s) can be added for this order week. The weekly limit is ${lasagnaLimit} lasagnas.`);
           return;
         }
       }
@@ -532,6 +535,11 @@ async function getWeekCapacity(weekKey){
   if(error) throw new Error("Unable to check weekly capacity.");
   return Number(data ?? SETTINGS.weeklyLoafLimit);
 }
+async function getWeekLasagnaCapacity(weekKey){
+  const {data,error}=await db.rpc("weekly_lasagna_capacity_for_week",{p_week_start:weekKey});
+  if(error) throw new Error("Unable to check weekly lasagna capacity.");
+  return Number(data ?? SETTINGS.weeklyLasagnaLimit);
+}
 async function getWeekLasagnaUsed(weekKey){
   const {data,error}=await db.rpc("weekly_lasagnas",{pickup_week:weekKey});
   if(error) throw new Error("Unable to check weekly lasagna availability.");
@@ -549,14 +557,15 @@ async function updateCapacityMessage(){
   if(!date){box.textContent="Select an order week to see weekly availability.";return}
   try{
     const weekKey=getWeekKey(date);
-    const [used,weeklyLimit,lasagnasUsed]=await Promise.all([
+    const [used,weeklyLimit,lasagnasUsed,lasagnaLimit]=await Promise.all([
       getWeekUsed(weekKey),
       getWeekCapacity(weekKey),
-      getWeekLasagnaUsed(weekKey)
+      getWeekLasagnaUsed(weekKey),
+      getWeekLasagnaCapacity(weekKey)
     ]);
     const remaining=Math.max(0,weeklyLimit-used);
-    const lasagnasRemaining=Math.max(0,SETTINGS.weeklyLasagnaLimit-lasagnasUsed);
-    box.textContent=`${remaining} of ${weeklyLimit} loaves remaining for the week of ${weekKey}.\n${lasagnasRemaining} of ${SETTINGS.weeklyLasagnaLimit} lasagnas remaining for the week of ${weekKey}.`;
+    const lasagnasRemaining=Math.max(0,lasagnaLimit-lasagnasUsed);
+    box.textContent=`${remaining} of ${weeklyLimit} loaves remaining for the week of ${weekKey}.\n${lasagnasRemaining} of ${lasagnaLimit} lasagnas remaining for the week of ${weekKey}.`;
     box.style.whiteSpace="pre-line";
   }catch(e){ box.textContent="Availability is temporarily unavailable. Please try again."; }
 }
@@ -575,9 +584,12 @@ async function saveOrderForCapacity(o){
   }
   const requestedLasagnas=getSelectedLasagnas();
   if(requestedLasagnas>0){
-    const latestLasagnas=await getWeekLasagnaUsed(weekKey);
-    if(latestLasagnas+requestedLasagnas>SETTINGS.weeklyLasagnaLimit){
-      throw new Error(`This week's lasagna capacity has changed. Only ${Math.max(0,SETTINGS.weeklyLasagnaLimit-latestLasagnas)} lasagna(s) remain.`);
+    const [latestLasagnas,lasagnaLimit]=await Promise.all([
+      getWeekLasagnaUsed(weekKey),
+      getWeekLasagnaCapacity(weekKey)
+    ]);
+    if(latestLasagnas+requestedLasagnas>lasagnaLimit){
+      throw new Error(`This week's lasagna capacity has changed. Only ${Math.max(0,lasagnaLimit-latestLasagnas)} lasagna(s) remain.`);
     }
   }
 
@@ -627,9 +639,12 @@ async function submitOrder(){
     }
     if(getSelectedLasagnas()>0){
       const weekKey=getWeekKey(o.orderWeek);
-      const used=await getWeekLasagnaUsed(weekKey);
-      if(used+getSelectedLasagnas()>SETTINGS.weeklyLasagnaLimit){
-        alert(`That order would exceed this week's ${SETTINGS.weeklyLasagnaLimit}-lasagna limit. Only ${Math.max(0,SETTINGS.weeklyLasagnaLimit-used)} lasagna(s) remain available for that week.`);
+      const [used,lasagnaLimit]=await Promise.all([
+        getWeekLasagnaUsed(weekKey),
+        getWeekLasagnaCapacity(weekKey)
+      ]);
+      if(used+getSelectedLasagnas()>lasagnaLimit){
+        alert(`That order would exceed this week's ${lasagnaLimit}-lasagna limit. Only ${Math.max(0,lasagnaLimit-used)} lasagna(s) remain available for that week.`);
         await updateCapacityMessage(); return;
       }
     }
