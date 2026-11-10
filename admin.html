@@ -12,7 +12,9 @@
 .container{max-width:1200px;margin:auto;padding:20px}header{padding:20px 0}h1,h2{font-family:Georgia,serif;color:var(--brown);margin:0}h1{font-size:32px}.sub{color:var(--muted);margin-top:5px}.card{background:var(--white);border:1px solid var(--line);border-radius:16px;padding:18px;margin:16px 0;box-shadow:0 5px 18px rgba(70,45,25,.06)}
 .grid{display:grid;grid-template-columns:repeat(6,1fr);gap:12px}.metric{background:#f4eadc;border-radius:12px;padding:14px}.metric strong{display:block;font-size:24px;color:var(--brown)}.metric span{font-size:12px;color:var(--muted)}
 .toolbar{display:grid;grid-template-columns:1.2fr 1fr 1fr 1fr auto;gap:10px;align-items:end}label{display:block;font-weight:700;font-size:13px;margin-bottom:5px}input,select{width:100%;padding:10px;border:1px solid #d9cec4;border-radius:9px;background:#fff;font:inherit}button{border:0;border-radius:9px;padding:11px 15px;font-weight:800;cursor:pointer}.primary{background:var(--brown);color:#fff}.secondary{background:#fff;border:1px solid var(--brown);color:var(--brown)}.danger{background:#fff;border:1px solid var(--red);color:var(--red)}
-.table-wrap{overflow:auto}.orders{width:100%;border-collapse:collapse;min-width:1050px}.orders th,.orders td{padding:11px 9px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}.orders th{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}.customer{font-weight:800}.detail{font-size:12px;color:var(--muted);margin-top:3px;white-space:pre-line}.money{font-weight:800;color:var(--brown)}.pill{display:inline-block;padding:5px 8px;border-radius:999px;font-size:11px;font-weight:800}.new{background:#eee7dc}.progress{background:#dcebf0;color:#24596a}.complete{background:#dcecdf;color:#245f43}.unpaid{background:#f5dfdb;color:#8a3027}.partial{background:#f4eadc;color:#79521f}.paid{background:#dcecdf;color:#245f43}.hidden{display:none}.login{max-width:430px;margin:80px auto}.error{color:var(--red);font-size:13px;margin-top:10px}.success{color:var(--green);font-size:13px;margin-top:10px}.actions{display:flex;gap:7px;flex-wrap:wrap}.small{font-size:12px;color:var(--muted)}
+.table-wrap{overflow:auto}.orders{width:100%;border-collapse:collapse;min-width:1050px}.orders th,.orders td{padding:11px 9px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}.orders th{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}.customer{font-weight:800}.detail{font-size:12px;color:var(--muted);margin-top:3px;white-space:pre-line}.money{font-weight:800;color:var(--brown)}.pill{display:inline-block;padding:5px 8px;border-radius:999px;font-size:11px;font-weight:800}.new{background:#eee7dc}.progress{background:#dcebf0;color:#24596a}.complete{background:#dcecdf;color:#245f43}.unpaid{background:#f5dfdb;color:#8a3027}.partial{background:#f4eadc;color:#79521f}.paid{background:#dcecdf;color:#245f43}.hidden{display:none}.login{max-width:430px;margin:80px auto}.error{color:var(--red);font-size:13px;margin-top:10px}.success{color:var(--green);font-size:13px;margin-top:10px}.actions{display:flex;gap:7px;flex-wrap:wrap}
+.modal-backdrop{position:fixed;inset:0;background:rgba(35,24,17,.55);display:flex;align-items:center;justify-content:center;padding:16px;z-index:1000}
+.modal-backdrop.hidden{display:none}.modal{background:#fffaf2;width:min(100%,480px);border-radius:16px;padding:22px;box-shadow:0 18px 60px rgba(0,0,0,.25)}.modal h2{margin-bottom:6px}.modal .field{margin-top:14px}.modal-actions{display:flex;justify-content:flex-end;gap:9px;margin-top:20px}.modal-message{font-size:13px;margin-top:10px}.modal-message.error{color:var(--red)}.modal-message.success{color:var(--green)}.small{font-size:12px;color:var(--muted)}
 @media(max-width:800px){.grid{grid-template-columns:1fr 1fr}.toolbar{grid-template-columns:1fr 1fr}}@media(max-width:520px){.grid{grid-template-columns:1fr}.toolbar{grid-template-columns:1fr}.container{padding:12px}}
 </style>
 </head>
@@ -23,7 +25,26 @@
   <label for="email">Email</label><input id="email" type="email" autocomplete="username">
   <label for="password">Password</label><input id="password" type="password" autocomplete="current-password">
   <button class="primary" style="width:100%;margin-top:14px" onclick="login()">Sign In</button>
+  <p style="text-align:center;margin:14px 0 0"><a href="#" onclick="showResetRequest();return false" style="color:var(--brown);font-weight:700">Forgot password?</a></p>
   <div id="loginError" class="error"></div>
+</div>
+
+<div id="resetRequestView" class="login card hidden">
+  <h1>Reset Password</h1>
+  <p class="sub">Enter your admin email address and we'll send you a password reset link.</p>
+  <label for="resetEmail">Email</label><input id="resetEmail" type="email" autocomplete="email">
+  <button class="primary" style="width:100%;margin-top:14px" onclick="sendPasswordReset()">Send Reset Link</button>
+  <p style="text-align:center;margin:14px 0 0"><a href="#" onclick="showLogin();return false" style="color:var(--brown);font-weight:700">Back to sign in</a></p>
+  <div id="resetRequestMessage" class="small" style="margin-top:12px"></div>
+</div>
+
+<div id="updatePasswordView" class="login card hidden">
+  <h1>Choose a New Password</h1>
+  <p class="sub">Enter and confirm your new admin password.</p>
+  <label for="newPassword">New Password</label><input id="newPassword" type="password" autocomplete="new-password">
+  <label for="confirmPassword" style="margin-top:12px">Confirm New Password</label><input id="confirmPassword" type="password" autocomplete="new-password">
+  <button class="primary" style="width:100%;margin-top:14px" onclick="updatePassword()">Update Password</button>
+  <div id="updatePasswordMessage" class="small" style="margin-top:12px"></div>
 </div>
 
 <div id="adminView" class="container hidden">
@@ -58,16 +79,64 @@
 </tr></thead><tbody id="ordersBody"></tbody></table></div><div id="message" class="small" style="margin-top:12px"></div></div>
 </div>
 
+<div id="paymentModal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="paymentModalTitle">
+  <div class="modal">
+    <h2 id="paymentModalTitle">Record Payment</h2>
+    <div id="paymentOrderSummary" class="sub"></div>
+    <div class="field"><label for="paymentAmount">Amount Received ($)</label><input id="paymentAmount" type="number" min="0.01" step="0.01" inputmode="decimal"></div>
+    <div class="field"><label for="paymentMethod">Payment Method</label><select id="paymentMethod"><option value="">Select method</option><option>ApplePay</option><option>Cash</option><option>Venmo</option><option>Zelle</option><option>Card</option><option>Other</option></select></div>
+    <div class="field"><label for="paymentNotes">Payment Notes (optional)</label><input id="paymentNotes" type="text" maxlength="500" placeholder="Transaction ID, reference, or other details"></div>
+    <div id="paymentModalMessage" class="modal-message"></div>
+    <div class="modal-actions"><button class="secondary" onclick="closePaymentModal()">Cancel</button><button id="savePaymentButton" class="primary" onclick="savePayment()">Save Payment</button></div>
+  </div>
+</div>
+
 <script>
 const SUPABASE_URL="https://kexrxtydurzkbfwqerqr.supabase.co";
 const SUPABASE_KEY="sb_publishable_yuxz9YQ22Oe0fwX60sl2Iw_Q_EaoRcx";
 const db=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
 let orders=[];
 let busy=false;
+let recoveringPassword=false;
 function esc(v){return String(v??"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#039;")}
 function money(n){return "$"+Number(n||0).toFixed(2)}
 function statusClass(s){return s==="Complete"?"complete":s==="In Progress"?"progress":"new"}
 function paymentClass(s){return s==="Paid"?"paid":s==="Partial"?"partial":"unpaid"}
+function showLogin(message=""){
+  document.getElementById("loginView").classList.remove("hidden");
+  document.getElementById("resetRequestView").classList.add("hidden");
+  document.getElementById("updatePasswordView").classList.add("hidden");
+  document.getElementById("loginError").textContent=message;
+}
+function showResetRequest(){
+  document.getElementById("loginView").classList.add("hidden");
+  document.getElementById("resetRequestView").classList.remove("hidden");
+  document.getElementById("updatePasswordView").classList.add("hidden");
+  document.getElementById("resetEmail").value=document.getElementById("email").value.trim();
+  document.getElementById("resetRequestMessage").textContent="";
+}
+async function sendPasswordReset(){
+  const email=document.getElementById("resetEmail").value.trim();
+  const box=document.getElementById("resetRequestMessage");box.className="small";box.textContent="";
+  if(!email){box.className="error";box.textContent="Please enter your email address.";return}
+  const redirectTo="https://kzjn4857kv-lab.github.io/StaceysCoastalCrumb/admin.html";
+  const {error}=await db.auth.resetPasswordForEmail(email,{redirectTo});
+  if(error){box.className="error";box.textContent=error.message;return}
+  box.className="success";box.textContent="If an account exists for that email, a password reset link has been sent. Check your inbox. You can close this page while you retrieve the email.";
+}
+async function updatePassword(){
+  const password=document.getElementById("newPassword").value;
+  const confirm=document.getElementById("confirmPassword").value;
+  const box=document.getElementById("updatePasswordMessage");box.className="small";box.textContent="";
+  if(password.length<8){box.className="error";box.textContent="Password must be at least 8 characters.";return}
+  if(password!==confirm){box.className="error";box.textContent="The passwords do not match.";return}
+  const {error}=await db.auth.updateUser({password});
+  if(error){box.className="error";box.textContent=error.message;return}
+  box.className="success";box.textContent="Your password has been updated. You can now sign in with your new password.";
+  document.getElementById("newPassword").value="";document.getElementById("confirmPassword").value="";
+  await db.auth.signOut();
+  setTimeout(()=>showLogin("Password updated. Please sign in with your new password."),1200);
+}
 async function login(){
   const email=document.getElementById("email").value.trim(),password=document.getElementById("password").value;
   const box=document.getElementById("loginError");box.textContent="";
@@ -130,8 +199,8 @@ function render(){
       <td><div class="money">${money(total)}</div><div class="detail">${esc(o.quantity||0)} loaves</div></td>
       <td><span class="pill ${statusClass(o.status)}">${esc(o.status||"New")}</span><select style="margin-top:7px" onchange="changeStatus('${o.id}',this.value)"><option ${o.status==="New"?"selected":""}>New</option><option ${o.status==="In Progress"?"selected":""}>In Progress</option><option ${o.status==="Complete"?"selected":""}>Complete</option></select></td>
       <td><span class="pill ${paymentClass(o.payment_status)}">${esc(o.payment_status||"Unpaid")}</span><div class="detail">Paid: ${money(paid)}<br>Due: ${money(due)}</div></td>
-      <td><select onchange="changePayment('${o.id}',this.value)"><option value="">Select method</option><option ${o.payment_method==="ApplePay"?"selected":""}>ApplePay</option><option ${o.payment_method==="Cash"?"selected":""}>Cash</option><option ${o.payment_method==="Venmo"?"selected":""}>Venmo</option><option ${o.payment_method==="Zelle"?"selected":""}>Zelle</option><option ${o.payment_method==="Card"?"selected":""}>Card</option><option ${o.payment_method==="Other"?"selected":""}>Other</option></select></td>
-      <td><div class="actions"><button class="secondary" onclick="recordPayment('${o.id}',${total})">Record Payment</button></div></td>
+      <td><div>${esc(o.payment_method||"Not recorded")}</div>${o.payment_notes?`<div class="detail">${esc(o.payment_notes)}</div>`:""}</td>
+      <td><div class="actions"><button class="secondary" onclick="recordPayment('${o.id}')">Record Payment</button></div></td>
     </tr>`;
   }).join("");
 }
@@ -141,18 +210,47 @@ async function updateOrder(id,patch){
   const idx=orders.findIndex(o=>String(o.id)===String(id));if(idx>=0)orders[idx]=data;updateMetrics();render();return true;
 }
 async function changeStatus(id,value){await updateOrder(id,{status:value})}
-async function changePayment(id,value){await updateOrder(id,{payment_method:value||null})}
-async function recordPayment(id,total){
+let activePaymentOrderId=null;
+function recordPayment(id){
   const o=orders.find(x=>String(x.id)===String(id));if(!o)return;
-  const current=Number(o.payment_amount||0),suggested=Math.max(0,Number(total)-current);
-  const entered=prompt(`Payment received for ${o.customer_name}.\nOrder total: ${money(total)}\nAlready paid: ${money(current)}\nEnter amount received:`,suggested.toFixed(2));
-  if(entered===null)return;
-  const amount=Number(entered);if(!Number.isFinite(amount)||amount<0){alert("Please enter a valid payment amount.");return}
-  const newPaid=Math.min(Number(total),current+amount);const status=newPaid<=0?"Unpaid":newPaid+0.001>=Number(total)?"Paid":"Partial";
-  await updateOrder(id,{payment_amount:newPaid,payment_status:status,paid_at:status==="Paid"?new Date().toISOString():o.paid_at});
+  activePaymentOrderId=id;
+  const total=Number(o.total_amount||0),current=Number(o.payment_amount||0),due=Math.max(0,total-current);
+  document.getElementById("paymentOrderSummary").textContent=`${o.customer_name} · Order total ${money(total)} · Already paid ${money(current)} · Balance due ${money(due)}`;
+  document.getElementById("paymentAmount").value=due.toFixed(2);
+  document.getElementById("paymentMethod").value=o.payment_method||"";
+  document.getElementById("paymentNotes").value=o.payment_notes||"";
+  document.getElementById("paymentModalMessage").textContent="";
+  document.getElementById("paymentModalMessage").className="modal-message";
+  document.getElementById("savePaymentButton").disabled=false;
+  document.getElementById("paymentModal").classList.remove("hidden");
+  document.getElementById("paymentAmount").focus();
 }
-db.auth.getSession().then(({data})=>{if(data.session)showAdmin(data.session.user)});
-db.auth.onAuthStateChange((_event,session)=>{if(session&&!document.getElementById("adminView").classList.contains("hidden")){} });
+function closePaymentModal(){document.getElementById("paymentModal").classList.add("hidden");activePaymentOrderId=null}
+async function savePayment(){
+  const o=orders.find(x=>String(x.id)===String(activePaymentOrderId));if(!o)return;
+  const amount=Number(document.getElementById("paymentAmount").value),method=document.getElementById("paymentMethod").value,notes=document.getElementById("paymentNotes").value.trim();
+  const box=document.getElementById("paymentModalMessage"),button=document.getElementById("savePaymentButton");
+  box.className="modal-message error";box.textContent="";
+  if(!Number.isFinite(amount)||amount<=0){box.textContent="Enter an amount greater than $0.00.";return}
+  if(!method){box.textContent="Select a payment method.";return}
+  const total=Number(o.total_amount||0),current=Number(o.payment_amount||0),due=Math.max(0,total-current);
+  if(amount>due+0.001){box.textContent=`The amount cannot exceed the remaining balance of ${money(due)}.`;return}
+  const newPaid=Math.round((current+amount)*100)/100;
+  const status=newPaid<=0?"Unpaid":newPaid+0.001>=total?"Paid":"Partial";
+  button.disabled=true;button.textContent="Saving...";
+  const saved=await updateOrder(activePaymentOrderId,{payment_amount:newPaid,payment_status:status,payment_method:method,payment_notes:notes||null,paid_at:status==="Paid"?new Date().toISOString():o.paid_at});
+  button.disabled=false;button.textContent="Save Payment";
+  if(saved)closePaymentModal();
+}
+db.auth.getSession().then(({data})=>{if(data.session&&!recoveringPassword)showAdmin(data.session.user)});
+db.auth.onAuthStateChange((event,session)=>{
+  if(event==="PASSWORD_RECOVERY"){
+    recoveringPassword=true;
+    document.getElementById("loginView").classList.add("hidden");
+    document.getElementById("resetRequestView").classList.add("hidden");
+    document.getElementById("updatePasswordView").classList.remove("hidden");
+  }
+});
 </script>
 </body>
 </html>
